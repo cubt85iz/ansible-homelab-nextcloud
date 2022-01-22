@@ -1,0 +1,118 @@
+---
+# Name for container.
+container_name: 'nextcloud'
+
+# Service name.
+# Several containers could be used to provide a service.
+# Therefore, this could differ from the container name.
+service_name: '{{ container_name }}'
+
+# Create BorgBackup Repository?
+create_backup_repo: true
+
+# Folders to be created for container.
+container_folders:
+  - {path: '/tank/services/{{ service_name }}/data', owner: 'www-data', group: 'root'}
+  - {path: '/tank/services/{{ service_name }}/scans', owner: 'philip', group: 'philip'}
+
+# Networks to be created for container.
+docker_networks:
+  - '{{ service_name }}'
+  - '{{ service_name }}.internal'
+
+# Pull new image from source
+container_pull_new_images: false
+
+# Path to Dockerfile
+container_dockerfile: 'Dockerfile'
+
+# Image to be used for container.
+container_image: 'nextcloud:smb'
+
+# Command to be used for container.
+container_command:
+
+# Restart policy to be used for container
+container_restart_policy: 'unless-stopped'
+
+# Network Mode for the Container
+container_network_mode: 'default'
+
+# User for the Container
+container_user: 'root:root'
+
+# Capabilities for Docker container
+container_capabilities:
+
+# Device requests for the container
+container_device_requests:
+
+# Environment variables to be used for container
+container_env: {
+  APACHE_DISABLE_REWRITE_IP: '1',
+  NEXTCLOUD_ADMIN_USER: "{{ nextcloud_admin }}",
+  NEXTCLOUD_ADMIN_PASSWORD: "{{ nextcloud_password }}",
+  NEXTCLOUD_TRUSTED_DOMAINS: '{{ nextcloud_domain }}',
+  NEXTCLOUD_DOMAIN_NAME: '{{ nextcloud_domain }}',
+  POSTGRES_HOST: "{{ nextcloud_db_host }}",
+  POSTGRES_DB: "{{ nextcloud_db_name }}",
+  POSTGRES_USER: "{{ postgres_user }}",
+  POSTGRES_PASSWORD: "{{ postgres_password }}",
+  REDIS_HOST: '{{ redis_host }}',
+  REDIS_HOST_PASSWORD: '{{ redis_password }}',
+  TRUSTED_PROXIES: '{{ proxy_ip }}'
+}
+
+# Ports to publish on the host
+container_ports:
+
+# Labels to be used for container
+container_labels: {
+  traefik.enable: 'true',
+  traefik.http.routers.nextcloud.entrypoints: 'http',
+  traefik.http.routers.nextcloud.rule: 'Host(`{{ nextcloud_domain }}`)',
+  traefik.http.middlewares.nextcloud-https-redirect.redirectscheme.scheme: 'https',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.accessControlMaxAge: '100',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.sslRedirect: 'true',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.stsSeconds: '15552000',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.stsIncludeSubdomains: 'true',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.stsPreload: 'true',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.forceSTSHeader: 'true',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.customFrameOptionsValue: 'SAMEORIGIN',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.contentTypeNosniff: 'true',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.browserXssFilter: 'true',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.referrerPolicy: 'no-referrer',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.featurePolicy: "camera 'none'; geolocation 'none'; microphone 'none'; payment 'none'; usb 'none'; vr 'none';",
+  traefik.http.middlewares.nextcloud-secure-headers.headers.customResponseHeaders.X-Robots-Tag: 'none',
+  traefik.http.middlewares.nextcloud-secure-headers.headers.customResponseHeaders.server: '',
+  traefik.http.middlewares.nextcloud-webdav.redirectregex.regex: 'https://(.*)/.well-known/(card|cal)dav',
+  traefik.http.middlewares.nextcloud-webdav.redirectregex.replacement: 'https://${1}/remote.php/dav/',
+  traefik.http.middlewares.nextcloud-webdav.redirectregex.permanent: 'true',
+  traefik.http.routers.nextcloud.middlewares: 'nextcloud-https-redirect',
+  traefik.http.routers.nextcloud-secure.entrypoints: 'https',
+  traefik.http.routers.nextcloud-secure.middlewares: 'nextcloud-secure-headers,nextcloud-webdav',
+  traefik.http.routers.nextcloud-secure.rule: 'Host(`{{ nextcloud_domain }}`)',
+  traefik.http.routers.nextcloud-secure.tls: 'true',
+  traefik.http.routers.nextcloud-secure.service: 'nextcloud',
+  traefik.http.services.nextcloud.loadbalancer.server.port: '{{ nextcloud_port }}',
+  traefik.docker.network: '{{ service_name }}'
+}
+
+# Networks to be associated with container
+container_networks:
+  - {name: '{{ service_name }}'}
+  - {name: '{{ service_name }}.internal'}
+  - {name: 'postgresql'}
+
+# Persistent volumes to be used with container
+container_volumes:
+  - '/tank/services/{{ service_name }}/data:/var/www/html'
+  - '/var/run/clamav:/var/run/clamav'
+  - '/etc/timezone:/etc/timezone:ro'
+  - '/etc/localhost:/etc/localhost:ro'
+
+# Files that must be copied to container storage prior to creating the container
+container_configuration_files:
+
+# Templates that must be applied to container storage prior to creating the container
+container_configuration_templates:

@@ -1,0 +1,26 @@
+---
+- name: 'Build custom image for {{ container_name }}'
+  include_role:
+    name: docker
+    tasks_from: build_image.yml
+    vars_from: main.yml
+
+- name: 'Execute create_container role for {{ container_name }}'
+  include_role:
+    name: docker
+    tasks_from: create_container.yml
+    vars_from: main.yml
+
+- name: Configure CRON to run maintenance tasks for Nextcloud
+  cron:
+    job: 'docker exec --user www-data nextcloud php -f /var/www/html/cron.php'
+    name: 'Nextcloud-Maintenance'
+    minute: '*/5'
+    user: 'root'
+
+- name: Configure CRON to run full text search index for Nextcloud
+  cron:
+    job: 'docker exec --user www-data nextcloud php occ fulltextsearch:index'
+    name: 'Nextcloud-FullTextSearch'
+    minute: '*/5'
+    user: 'root'

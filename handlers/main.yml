@@ -1,0 +1,25 @@
+---
+- name: Create Build Directory for Nextcloud
+  file:
+    path: /opt/docker/images/nextcloud
+    owner: root
+    group: root
+    mode: '0755'
+    state: directory
+
+- name: Copy Nextcloud Dockerfile to build directory
+  template:
+    src: 'Dockerfile'
+    dest: /opt/docker/images/nextcloud/Dockerfile
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Build Docker Image for Nextcloud
+  docker_image:
+    name: nextcloud:smb
+    build:
+      path: /opt/docker/images/nextcloud
+      pull: false
+    source: build
+    state: present
